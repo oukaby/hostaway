@@ -1,0 +1,25 @@
+name: 'dbt_postgres_project'
+version: '1.0'
+config-version: 2
+
+profile: 'airflow_postgres'  # Your DBT profile defined in profiles.yml
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets: 
+  - "target"
+  - "dbt_packages"
+
+models:
+  dbt_postgres_project:
+    marts:
+      +materialized: table  # Set model materialization
+      +tag: marts
+    staging:
+      +materialized: table  # Set model materialization
+      +tag: staging

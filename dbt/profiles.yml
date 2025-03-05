@@ -1,0 +1,14 @@
+airflow_postgres:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres
+      user: postgres
+      password: postgres
+      port: 5432
+      dbname: sales # or database instead of dbname
+      schema: public
+      threads: 1
+      connect_timeout: 30
+      use_psycopg2: true

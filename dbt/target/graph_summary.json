@@ -1,0 +1,1 @@
+{"_invocation_id": "cd28efb3-ca23-496f-8652-415a94087d21", "linked": {"0": {"name": "source.dbt_postgres_project.raw_sales.sales_data", "type": "source", "succ": [1]}, "1": {"name": "model.dbt_postgres_project.total_sales_per_product", "type": "model"}}}

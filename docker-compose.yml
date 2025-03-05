@@ -1,11 +1,93 @@
 version: '3.8'
 services:
   postgres:
+    container_name: postgres
     image: postgres:latest
+    networks:
+      - airflow-db-network
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sales
     volumes:
-      - ./initdb:/docker-entrypoint-initdb.d
+      - ./initdb/init_sales_db.sql:/docker-entrypoint-initdb.d/init_sales_db.sql
     ports:
       - "5432:5432"
+
+  dbt:
+    container_name: dbt
+    # image: dbt-docker-image:latest
+    build: 
+      context: .  # Path to your Dockerfile directory (current directory in this case)
+      dockerfile: Dockerfile  # Optional, specify the name of the Dockerfile if it’s not named 'Dockerfile'
+    volumes:
+      - ./dbt:/opt/airflow/dbt
+      - ./dbt/profiles.yml:/root/.dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /opt/airflow/dbt
+    networks:
+      - airflow-db-network
+    environment:
+      - DBT_USER=postgres
+      - DBT_PASSWORD=postgres
+      - DBT_HOST=postgres
+      - DBT_PORT=5432
+      - DBT_DATABASE=dbt_sales
+      - DBT_PROFILE_DIR=/dbt/profiles.yml
+    depends_on:
+      - postgres
+
+  airflow-webserver:
+    container_name: airflow-webserver
+    image: apache/airflow:2.5.0
+    networks:
+      - airflow-db-network
+    environment:
+      - AIRFLOW__WEBSERVER__RBAC=true
+      - AIRFLOW_CONN_POSTGRES_CONN=postgres://postgres:postgres@postgres:5432/sales
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/sales
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+      - ./python:/opt/airflow/python
+      - ./dbt:/opt/airflow/dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint:
+      bash -c "
+        airflow db init && \
+        airflow db upgrade && \
+        airflow users create --username airflow --password airflow --firstname Robin --lastname Leveque --email rleveque@live.fr --role Admin && \
+        airflow connections add 'postgres_conn' \
+        --conn-uri 'postgres://postgres:postgres@postgres:5432/sales' && \
+        airflow webserver"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  airflow-scheduler:
+    container_name: airflow-scheduler
+    image: apache/airflow:2.5.0
+    networks:
+      - airflow-db-network
+    environment:
+      - AIRFLOW__WEBSERVER__RBAC=true
+      - AIRFLOW_CONN_POSTGRES_CONN=postgres://postgres:postgres@postgres:5432/sales
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/sales
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+      - ./python:/opt/airflow/python
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint:
+      bash -c "airflow db init && airflow scheduler"
+    depends_on:
+      - airflow-webserver
+
+networks:
+  airflow-db-network:
+    driver: bridge
