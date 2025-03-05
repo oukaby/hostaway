@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: sales
+    description: "Staging model for sales data"
+    columns:
+      - name: sale_id
+        description: "Unique identifier for each sale"
+        tests:
+          - not_null
+          - unique
+      - name: product_id
+        description: "Identifier for each product"
+        tests:
+          - not_null
+      - name: product_name
+        description: "Name of the product"
+        tests:
+          - accepted_values:
+              values: ['Laptop', 'Coffee Maker', 'Blender', 'Desk Chair','Smartphone', 'Desk Lamp', 'Office Desk', 'Coffee Machine']
+      - name: brand
+        description: "Product brand"
+      - name: category
+        description: "Type of product category"
+        tests:
+          - accepted_values:
+              values: ['Electronics', 'Appliances', 'Furniture']
+      - name: retailer_id
+        description: "Identifier for each retailer"
+        tests:
+          - not_null
+      - name: retailer_name
+        description: "Name of the retailer"
+      - name: channel
+        description: "Type of channel"
+        tests:
+          - accepted_values:
+              values: ['Online', 'Offline']
+      - name: location
+        description: "Name of the location"
+      - name: quantity
+        description: "Quantity of product"
+      - name: price
+        description: "Price of the product"
+      - name: date
+        description: "Date of the sale"
