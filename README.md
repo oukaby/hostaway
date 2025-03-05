@@ -1,55 +1,75 @@
 # Senior Data Engineer Take-Home Assignment
 
+👋 Hi there it's Robin
 
-👋 Welcome to the Hostaway Data Engineer Technical Test
+## Overview
+This project demonstrates the setup of an automated data pipeline for processing, transforming, and loading sales data into a PostgreSQL database using Docker Compose, Airflow, and DBT. The pipeline is structured into the following main stages:
 
-## Objective
-This assignment will test your skills in building an efficient data pipeline that processes CSV data, loads it into a database, orchestrates with Airflow, and transforms data using dbt.
+1. Ingestion and Processing: The ingest_and_process_data.py script processes the raw generated_sales_data.csv file, handling data quality issues before storing the processed data into a new file processed_sales_data.csv.
 
-## Requirements
+2. Data Loading: The processed sales data is loaded into PostgreSQL via the load_data_to_postgres.py script, using Docker Compose to run a PostgreSQL container.
 
-### Part 1: Data Ingestion & Processing
-- Create a script to ingest and parse the provided CSV file `./generated-sales-data.csv`
-- Handle common data quality issues (missing values, duplicates)
-- Design for incremental loading capabilities (optional)
+3. Data Transformation: DBT (Data Build Tool) is used to transform the raw data into useful analytics-ready tables.
 
-### Part 2: Database Integration
-- Load the processed data into PostgreSQL with appropriate schema design (docker compose provided)
-- Implement basic indexing for performance optimization
+4. Orchestration with Airflow: An Airflow DAG is created to automate and orchestrate the entire pipeline, from ingestion to transformation.
 
-### Part 3: Airflow Orchestration
-- Create an Airflow DAG to orchestrate the pipeline
-- Set up task dependencies that reflect the data flow
+### Key Technologies Used
+- Python: For scripts to process and load data.
+- PostgreSQL: To store the sales data in a relational database.
+- Airflow: To manage the orchestration of the ETL pipeline.
+- DBT: To perform transformations on the sales data.
+- Docker Compose: To create and manage the containers for PostgreSQL, Airflow, and DBT.
 
-### Part 4: dbt Implementation
-- Set up a dbt project to transform the raw data
-- Create at least one staging model and one dimensional model
-- Include basic tests for your models
+## Setup Instructions
+### Prerequisites
 
-### Part 5: Documentation
-- Provide a README explaining your approach and setup instructions
+1. Docker and Docker Compose must be installed on your machine.
+    - Install Docker: https://docs.docker.com/get-docker/
+    - Install Docker Compose: https://docs.docker.com/compose/install/
 
-## Provided Resources
-- `generated-sales-data.csv`: Contains sales data
-- Postgres docker compose 
-- Connection details for PostgreSQL database
+2. Python 3.x: For running the ingestion and data loading scripts.
 
-## Submission Guidelines
-- Submit all code in a GitHub repository
-- Complete the assignment within 5 days
-- Be prepared to discuss your solution in a follow-up interview
+### Steps to run the Pipeline
+
+1. Clone the Repository: Download or clone the repository containing the project files.
+    git clone <your-repository-url>
+    cd <your-repository-name>
+
+2. Start the Containers: Run the following command to start all the services.
+    - docker-compose up --build
+    (This will start PostgreSQL, Airflow webserver, Airflow scheduler, and DBT containers as defined in the docker-compose.yml file.)
+
+3. Running Airflow DAG
+    To trigger the DAG manually:
+    - Open the Airflow web UI: http://localhost:8080
+    - Use username: airflow and password: airflow to login
+    - In the DAGs section, locate the sales_data_ingestion_dag.
+    - Trigger the DAG to start processing the data and running the DBT transformations.
+    You can monitor the progress of the tasks through the Airflow UI.
 
 
-### ---
-### Start postgres
-This creates a `sales` database
-```bash
-docker-compose up -d
-```
-*Note: if you have something running locally on port 5432 which will conflict with the postgres docker container then you can change the local port mapping in `docker-compose.yml` like so:*
-```yaml
-    ports:
-      - "6543:5432"
-``` 
+### Project Architecture
+The project architecture consists of several components working together:
 
-### Good luck!
+- PostgreSQL Database: Stores the processed and transformed sales data.
+- DBT: Performs transformations on the raw sales data to create staging, dimensional, and aggregated models.
+- Airflow: Orchestrates the pipeline tasks by setting up a DAG and task dependencies to run the scripts and DBT models in sequence.
+- Docker Compose: Manages the different services as containers (PostgreSQL, DBT, and Airflow).
+
+### DBT Models
+Staging Model (sales): This model renames and cleans the raw sales data, preparing it for further analysis.
+Dimensional Model (dim_product): Adds product-level information such as product id and product name.
+Aggregated Model (total_sales_per_product): Aggregates the total sales per product, calculating the total volume of sales for each product.
+
+### DBT Test
+The sales staging model includes several data quality tests:
+
+- sale_id: Ensures it is unique and not null.
+- product_id: Ensures it is not null.
+- product_name: Validates against a set of accepted values (e.g., 'Laptop', 'Blender').
+- category: Validates against accepted values (e.g., 'Electronics', 'Furniture').
+- retailer_id: Ensures it is not null.
+- channel: Validates against accepted values ('Online', 'Offline').
+
+### Indexing
+At this stage, indexing is not implemented because it was determined to be unnecessary for the current dataset size and downsteam use. However, as the dataset grows and more dbt models are being build, it may be beneficial to consider adding indexes to improve query performance.
